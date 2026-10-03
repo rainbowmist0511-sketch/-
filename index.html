@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#111827" />
+  <title>ระบบเช็คอินของแผนก</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="setupBanner" class="setup-banner hidden"></div>
+
+  <div id="loginView" class="login-view hidden">
+    <div class="login-card">
+      <div class="brand-mark large">✓</div>
+      <h1>ระบบเช็คอินของแผนก</h1>
+      <p>สำหรับเจ้าหน้าที่แผนกก่อสร้าง–สถาปัตย์</p>
+      <form id="loginForm">
+        <label>อีเมล<input id="loginEmail" type="email" required autocomplete="email"></label>
+        <label>รหัสผ่าน<input id="loginPassword" type="password" required autocomplete="current-password"></label>
+        <button class="btn primary full" type="submit">เข้าสู่ระบบ</button>
+      </form>
+      <p id="loginStatus" class="notice"></p>
+    </div>
+  </div>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">✓</div>
+        <div><strong>ระบบเช็คอินของแผนก</strong><span>Department Check-in</span></div>
+      </div>
+      <nav>
+        <button class="nav-btn active" data-view="dashboard">ภาพรวม</button>
+        <button class="nav-btn" data-view="bookings">รายชื่อผู้จอง</button>
+        <button class="nav-btn" data-view="tables">สถานะโต๊ะ</button>
+        <button class="nav-btn" data-view="scanner">สแกน QR</button>
+        <button class="nav-btn admin-only" data-view="import">นำเข้าข้อมูล</button>
+        <button class="nav-btn admin-only" data-view="history">ประวัติเช็กอิน</button>
+      </nav>
+      <div class="sidebar-note">รับเฉพาะโต๊ะ C11–C60 รวม 50 โต๊ะ</div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">ระบบหน้างานสำหรับเจ้าหน้าที่แผนก</p>
+          <h1 id="pageTitle">ภาพรวม</h1>
+        </div>
+        <div class="top-actions">
+          <div class="user-box"><span id="userEmail"></span><small id="userRole"></small></div>
+          <button id="logoutBtn" class="btn ghost">ออกจากระบบ</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <div class="stats-grid">
+          <article class="stat"><span>โต๊ะทั้งหมด</span><strong>50</strong></article>
+          <article class="stat"><span>ชำระแล้ว</span><strong id="statPaidTables">0</strong></article>
+          <article class="stat"><span>โต๊ะว่าง</span><strong id="statAvailableTables">50</strong></article>
+          <article class="stat"><span>เช็กอินแล้ว</span><strong id="statCheckedIn">0</strong></article>
+        </div>
+        <div class="panel-grid">
+          <article class="panel">
+            <div class="panel-head"><div><h2>โต๊ะที่ยังว่าง</h2><p class="muted">ใช้ตอบศิษย์เก่าก่อนวันงานได้ทันที</p></div><button class="link-btn" data-jump="tables">ดูทั้งหมด</button></div>
+            <div id="availableQuick" class="chip-wrap"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h2>สถานะระบบ</h2><p id="lastSync" class="muted"></p></div></div>
+            <div class="legend large">
+              <span><i class="dot available"></i>ว่าง</span>
+              <span><i class="dot paid"></i>ชำระแล้ว</span>
+              <span><i class="dot checked"></i>เช็กอินแล้ว</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="bookings" class="view">
+        <div class="toolbar">
+          <input id="bookingSearch" class="search" placeholder="ค้นหาชื่อ เบอร์โทร รหัสจอง หรือเลขโต๊ะ" />
+          <select id="bookingFilter" class="select">
+            <option value="all">ทุกสถานะ</option>
+            <option value="paid">ชำระแล้ว</option>
+            <option value="checked">เช็กอินแล้ว</option>
+          </select>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>รหัสจอง</th><th>ผู้จอง</th><th>โทรศัพท์</th><th>โต๊ะ</th><th>ที่นั่ง</th><th>สถานะ</th><th></th></tr></thead>
+          <tbody id="bookingRows"></tbody>
+        </table></div>
+      </section>
+
+      <section id="tables" class="view">
+        <div class="panel-head wrap"><div><h2>สถานะโต๊ะ C11–C60</h2><p class="muted">แดง = ว่าง / เหลือง = ชำระแล้ว / เขียว = เช็กอินแล้ว</p></div></div>
+        <div id="tableGrid" class="table-grid"></div>
+      </section>
+
+      <section id="scanner" class="view">
+        <div class="scanner-layout">
+          <article class="panel scanner-panel">
+            <h2>สแกน QR ของวิทยาลัย</h2>
+            <p class="muted">ระบบจะตรวจว่า QR นี้ตรงกับผู้จองของโต๊ะ C11–C60 หรือไม่ก่อนอนุญาตให้เช็กอิน</p>
+            <div id="qrReader" class="camera-box"></div>
+            <div class="scanner-actions"><button id="startScanner" class="btn primary">เปิดกล้องสแกน QR</button><button id="stopScanner" class="btn ghost">ปิดกล้อง</button></div>
+            <p id="scannerStatus" class="notice"></p>
+          </article>
+          <article class="panel">
+            <h2>ค้นหาสำรอง</h2>
+            <p class="muted">กรณีผู้จองเปิด QR ไม่ได้ ให้ค้นหาด้วยชื่อ / เบอร์โทร / เลขโต๊ะ / รหัสจอง</p>
+            <div class="manual-row"><input id="manualLookupText" class="search" placeholder="เช่น สมชาย / 0812345678 / C21 / BK001"/><button id="manualLookupBtn" class="btn primary">ค้นหา</button></div>
+            <div id="scanResult" class="scan-result empty">ยังไม่มีผลการค้นหา</div>
+          </article>
+        </div>
+      </section>
+
+      <section id="import" class="view">
+        <article class="panel">
+          <h2>นำเข้าข้อมูลจากวิทยาลัย</h2>
+          <p class="muted">ไฟล์ CSV ควรเป็นรายการที่ “ชำระแล้ว” จากระบบหลักของวิทยาลัย และต้องมีค่า QR ของวิทยาลัยหรือรหัสอ้างอิงที่ระบบใช้จับคู่ได้</p>
+          <div class="import-grid">
+            <label class="file-box">เลือก CSV<input id="csvFile" type="file" accept=".csv,text/csv" /></label>
+            <button id="downloadTemplate" class="btn ghost">ดาวน์โหลดไฟล์ตัวอย่าง</button>
+          </div>
+          <p class="muted small">คอลัมน์ที่รองรับ: booking_ref, name, phone, table_number, seats, college_qr_value</p>
+          <div id="importPreview"></div>
+          <button id="confirmImport" class="btn primary hidden">ยืนยันนำเข้า</button>
+          <p id="importStatus" class="notice"></p>
+        </article>
+      </section>
+
+      <section id="history" class="view">
+        <article class="panel">
+          <div class="panel-head"><div><h2>ประวัติเช็กอิน</h2><p class="muted">เก็บเวลาและเจ้าหน้าที่ผู้ดำเนินการ</p></div></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>เวลา</th><th>ผู้จอง</th><th>โต๊ะ</th><th>วิธี</th><th>เจ้าหน้าที่</th></tr></thead>
+            <tbody id="historyRows"></tbody>
+          </table></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="bookingDialog">
+    <div class="dialog-card">
+      <button id="dialogClose" class="dialog-close">×</button>
+      <div id="dialogContent"></div>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

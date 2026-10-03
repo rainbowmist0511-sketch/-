@@ -1,0 +1,4 @@
+booking_ref,name,phone,table_number,seats,college_qr_value
+BK001,สมชาย ใจดี,0812345678,C18,8,COLLEGE-QR-BK001
+BK002,วิชัย ช่างดี,0891112233,C24,8,COLLEGE-QR-BK002
+BK003,ประเสริฐ ทองดี,0863332211,C31,8,COLLEGE-QR-BK003
