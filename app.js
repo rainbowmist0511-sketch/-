@@ -23,6 +23,17 @@
 
   function setNotice(node, text, type='') { node.textContent = text || ''; node.className = `notice ${type}`.trim(); }
   function normalizePhone(v=''){ return String(v).replace(/\D/g,''); }
+  function loginIdentifierToEmail(v=''){
+    const raw = String(v).trim();
+    if (raw.includes('@')) return raw.toLowerCase();
+    const phone = normalizePhone(raw);
+    if (/^0\d{9}$/.test(phone)) return `${phone}@staff.local`;
+    return '';
+  }
+  function displayUserIdentifier(email=''){
+    const m = String(email).match(/^(0\d{9})@staff\.local$/i);
+    return m ? m[1] : (email || 'เจ้าหน้าที่');
+  }
   function validTable(t=''){ return /^C(?:1[1-9]|[2-5]\d|60)$/i.test(String(t).trim()); }
   function statusOfBooking(b){ return b.checked_in_at ? 'checked' : 'paid'; }
   function tableBooking(t){ return state.bookings.find(b => b.table_number === t); }
@@ -54,7 +65,7 @@
   function showLogin(){ el.loginView.classList.remove('hidden'); el.appShell.classList.add('hidden'); }
   function showApp(){
     el.loginView.classList.add('hidden'); el.appShell.classList.remove('hidden');
-    el.userEmail.textContent = state.user?.email || 'เจ้าหน้าที่';
+    el.userEmail.textContent = displayUserIdentifier(state.user?.email);
     el.userRole.textContent = state.profile.role === 'admin' ? 'ผู้ดูแลระบบ' : 'เจ้าหน้าที่';
     document.querySelectorAll('.admin-only').forEach(n => n.classList.toggle('hidden', state.profile.role !== 'admin'));
   }
@@ -229,7 +240,19 @@
   el.csvFile.addEventListener('change',e=>{const f=e.target.files[0]; if(f) parseCsv(f)}); el.confirmImport.addEventListener('click',confirmImport); el.downloadTemplate.addEventListener('click',downloadTemplate);
   el.dialogClose.addEventListener('click',()=>el.bookingDialog.close());
 
-  el.loginForm.addEventListener('submit',async e=>{ e.preventDefault(); setNotice(el.loginStatus,'กำลังเข้าสู่ระบบ...'); const {data,error}=await sb.auth.signInWithPassword({email:el.loginEmail.value,password:el.loginPassword.value}); if(error)return setNotice(el.loginStatus,error.message,'error'); state.user=data.user; await loadProfile(); showApp(); await loadData(); subscribeRealtime(); });
+  el.loginForm.addEventListener('submit',async e=>{
+    e.preventDefault();
+    setNotice(el.loginStatus,'กำลังเข้าสู่ระบบ...');
+    const email = loginIdentifierToEmail(el.loginEmail.value);
+    if(!email) return setNotice(el.loginStatus,'กรุณากรอกเบอร์โทร 10 หลัก หรืออีเมลให้ถูกต้อง','error');
+    const {data,error}=await sb.auth.signInWithPassword({email,password:el.loginPassword.value});
+    if(error)return setNotice(el.loginStatus,'เบอร์โทร/อีเมล หรือรหัสผ่านไม่ถูกต้อง','error');
+    state.user=data.user;
+    await loadProfile();
+    showApp();
+    await loadData();
+    subscribeRealtime();
+  });
   el.logoutBtn.addEventListener('click',async()=>{ if(DEMO){location.reload(); return;} await sb.auth.signOut(); location.reload(); });
 
   init().catch(e=>{ console.error(e); alert('เกิดข้อผิดพลาด: '+e.message); });
